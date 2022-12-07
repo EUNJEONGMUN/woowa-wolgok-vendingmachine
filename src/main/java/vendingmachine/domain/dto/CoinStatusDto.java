@@ -6,10 +6,10 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CoinStatus {
+public class CoinStatusDto {
     private final EnumMap<Coin, Integer> coinStatus;
 
-    public CoinStatus(EnumMap<Coin, Integer> coinStatus) {
+    public CoinStatusDto(EnumMap<Coin, Integer> coinStatus) {
         this.coinStatus = coinStatus;
     }
 

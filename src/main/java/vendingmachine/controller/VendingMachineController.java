@@ -1,65 +1,71 @@
 package vendingmachine.controller;
 
-import vendingmachine.constant.Constant;
-import vendingmachine.domain.Product;
-import vendingmachine.domain.VendingMachine;
-import vendingmachine.domain.dto.CoinStatus;
+import vendingmachine.domain.Money;
+import vendingmachine.domain.ProductName;
+import vendingmachine.domain.dto.StockDto;
+import vendingmachine.service.CoinService;
+import vendingmachine.service.ProductService;
+import vendingmachine.service.VendingMachineService;
+import vendingmachine.util.ProductInfoParser;
 import vendingmachine.view.InputView;
 import vendingmachine.view.OutputView;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class VendingMachineController {
-
-    private final InputView inputView = new InputView();
-    private final OutputView outputView = new OutputView();
-    private final VendingMachine vendingMachine = new VendingMachine();
+    private final VendingMachineService vendingMachineService = new VendingMachineService();
+    private final CoinService coinService = new CoinService();
+    private final ProductService productService = new ProductService();
 
     public void init() {
-        while (true) {
-            try {
-                int money = inputView.readVendingMachineMoney();
-                vendingMachine.setMachineCoin(money);
-                outputView.printVendingMachineCoin(vendingMachine.returnCoin());
-                readProductInfo();
-                vendingMachine.insertMoney(inputView.readMoney());
-                start();
-            } catch (IllegalArgumentException e) {
-                System.out.println(e.getMessage());
-            }
-        }
+        machineCoinSetting();
+        machineStockSetting();
+        userMoneySetting();
+        start();
+    }
+
+    private void machineCoinSetting() {
+        Money money = read(Money::from, InputView::readVendingMachineMoney);
+        coinService.setVendingMachineMoney(money);
+        OutputView.printVendingMachineCoin(coinService.getMachineCoin());
+    }
+
+    private void machineStockSetting() {
+        List<StockDto> productInfos = read(ProductInfoParser::makeStockList, InputView::readProductInfo);
+        productService.setVendingMachineStock(productInfos);
+    }
+
+    private void userMoneySetting() {
+        Money userMoney = read(Money::from, InputView::readMoney);
+        vendingMachineService.insertMoney(userMoney);
     }
 
     private void start() {
-        boolean canBuy = true;
-        while (canBuy) {
-            outputView.printRemainMoney(vendingMachine.getRemainMoney());
-            vendingMachine.sellProduct(inputView.readProductName());
-            canBuy = vendingMachine.isCanBuy();
+        while (vendingMachineService.isAvailable()) {
+            OutputView.printRemainMoney(vendingMachineService.getUserMoney());
+            try {
+                vendingMachineService.sellProduct(read(ProductName::from, InputView::readProductName));
+            } catch (IllegalArgumentException e) {
+                OutputView.printErrorMessage(e.getMessage());
+            }
         }
         endMachine();
     }
 
-    private void readProductInfo(){
-        List<String> productInfo = inputView.readProductInfo();
-        for (String info : productInfo) {
-            addStock(splitProductInfo(info));
-        }
-    }
-    private String[] splitProductInfo(String info) {
-        String substring = info.substring(1, info.length() - 1);
-        return substring.split(Constant.PRODUCT_INFO_DELIMITER);
-    }
-
-    private void addStock(String[] info) {
-        String productName = info[Constant.PRODUCT_NAME_INDEX];
-        int productPrice = Integer.parseInt(info[Constant.PRODUCT_PRICE_INDEX]);
-        int productAmount = Integer.parseInt(info[Constant.PRODUCT_AMOUNT_INDEX]);
-        vendingMachine.addStock(Product.of(productName, productPrice), productAmount);
-    }
-
     private void endMachine() {
-        System.out.println("잔돈");
-        outputView.printVendingMachineCoin(vendingMachine.returnCoin());
+        OutputView.printRemainMoney(vendingMachineService.getUserMoney());
+        OutputView.printChanges(vendingMachineService.returnChange());
+    }
+
+    private <T, R> R read(Function<T, R> object, Supplier<T> input) {
+        while (true) {
+            try {
+                return object.apply(input.get());
+            } catch (IllegalArgumentException e) {
+                OutputView.printErrorMessage(e.getMessage());
+            }
+        }
     }
 }

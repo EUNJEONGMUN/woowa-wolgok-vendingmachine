@@ -1,23 +1,22 @@
 package vendingmachine.domain;
 
-import java.util.List;
 import java.util.Objects;
 
 public class Product {
     private static final int PRICE_MINIMUM = 100;
     private static final int PRICE_UNIT = 10;
 
-    private final String name;
+    private final ProductName name;
     private final int price;
 
-    private Product(String name, int price) {
+    private Product(ProductName name, int price) {
         validPrice(price);
         this.name = name;
         this.price = price;
     }
 
     public static Product of(String name, int price) {
-        return new Product(name, price);
+        return new Product(ProductName.from(name), price);
     }
 
     private void validPrice(int price) {
@@ -37,15 +36,12 @@ public class Product {
         }
     }
 
-    public boolean canBuy(int money) {
-        if (money<price) {
-            return false;
-        }
-        return true;
-    }
-
     public int getPrice() {
         return price;
+    }
+
+    public boolean isCanBuy(int money) {
+        return price <= money;
     }
 
     @Override

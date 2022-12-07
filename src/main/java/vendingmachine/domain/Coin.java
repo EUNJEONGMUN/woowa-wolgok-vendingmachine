@@ -1,7 +1,6 @@
 package vendingmachine.domain;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,32 +16,25 @@ public enum Coin {
         this.amount = amount;
     }
 
-    public Coin from(int amount) {
+    public static Coin from(int amount) {
         return Arrays.stream(Coin.values())
                 .filter(coin -> coin.amount == amount)
                 .findAny()
                 .get();
     }
 
-    public static List<Coin> getCoins() {
+    public static List<Integer> getAvailableCoins(int money) {
+        return Arrays.stream(Coin.values())
+                .map(coin -> coin.getAmount())
+                .filter(coin -> coin <= money)
+                .collect(Collectors.toList());
+    }
+
+    public static List<Coin> getAllCoins() {
         return Arrays.stream(Coin.values()).collect(Collectors.toUnmodifiableList());
-    }
-
-    public int countOfCoinMakeByMoney(int money) {
-        return money / this.amount;
-    }
-
-    public int amountOfMoney(int count) {
-        return this.amount * count;
     }
 
     public int getAmount() {
         return amount;
-    }
-
-    public static Coin getMinimumCoin() {
-        return Arrays.stream(Coin.values())
-                .min(Comparator.comparingInt(Coin::getAmount))
-                .get();
     }
 }
